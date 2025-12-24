@@ -28,6 +28,7 @@ void chatting(int sd);
 void *thread_led(void *arg);
 void *thread_buzzer(void *arg);
 void *thread_cds(void *arg);
+void *thread_seg(void *arg);
 
 int main(void)
 {
@@ -76,6 +77,7 @@ void chatting(int sd){
     st_led_data     led_data_set;
     st_buzzer_data  buzzer_data_set;
     st_cds_data     cds_data_set;
+    st_seg_data     seg_data_set;
 
     // char buf[MAXDATASIZE];
     int status;
@@ -144,6 +146,15 @@ void chatting(int sd){
                     pthread_detach(a_thread);
                     running_thread = 1;
                 }
+                else if(menu == 4){
+                    strcpy(buf,"숫자를 입력하면 카운트 다운 됩니다..\n");
+                    send(sd, buf, strlen(buf), 0);
+                    seg_data_set.sd = sd;
+                    seg_data_set.kill_thread = &kill_thread;
+                    pthread_create(&a_thread, NULL, thread_seg, &seg_data_set);
+                    pthread_detach(a_thread);
+                    running_thread = 1;
+                }
             }
             else if(MENU == 1){
                 int brightness = atoi(buf);
@@ -180,7 +191,18 @@ void chatting(int sd){
                 }
             }
             else if(MENU == 3){
-
+                
+            }
+            else if(MENU == 4){
+                int start_num = atoi(buf);
+                if(1<=start_num && start_num<=9){
+                    seg_data_set.start_num = 1;
+                    printf("카운트다운 시작\n");
+                }
+                else{
+                    strcpy(buf,"시작숫자는 ... 1~9...\n");
+                    send(seg_data_set.sd, buf, strlen(buf), 0);
+                }
             }
 
             // printf("클라이언트>> %s\n", buf);
@@ -225,6 +247,19 @@ void *thread_cds(void *arg)
     }
     cdsControl = (OP_FUNC)dlsym(handle, "cdsControl");
     cdsControl(arg);
+    dlclose(handle);
+    pthread_exit(NULL);
+}
+void *thread_seg(void *arg)
+{
+    OP_FUNC segControl;
+    void *handle=dlopen("./lib/libsegControl.so", RTLD_LAZY);
+    if(handle==NULL) {
+        printf("%s\n", dlerror());
+        exit(1);
+    }
+    segControl = (OP_FUNC)dlsym(handle, "segControl");
+    segControl(arg);
     dlclose(handle);
     pthread_exit(NULL);
 }

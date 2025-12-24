@@ -10,6 +10,13 @@
 #define SEG_D 24
 #define SEG_DP 25
 
+
+typedef struct{
+    int sd;
+    int* start_num;
+    int* kill_thread;
+} st_seg_data;
+
 // 초기화
 void seg_init();
 
