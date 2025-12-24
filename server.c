@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <pthread.h>
 #include <dlfcn.h>
+#include <wiringPi.h>
 
 #define BACKLOG 10
 #define MAXDATASIZE 1000
@@ -30,6 +31,7 @@ struct st_led_data{
 
 int main(void)
 {
+    wiringPiSetup(); 
     int sockfd, new_fd;
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
@@ -104,7 +106,7 @@ void chatting(int sd){
                     send(sd, buf, strlen(buf), 0);
                     led_data_set.sd = sd;
                     led_data_set.brightness = 0;
-                    pthread_create(&a_thread, NULL, thread_led, &sd);
+                    pthread_create(&a_thread, NULL, thread_led, &led_data_set);
                 }
                 MENU = menu;
             }
@@ -112,20 +114,22 @@ void chatting(int sd){
                 int brightness = atoi(buf);
                 if(brightness == 1){
                     led_data_set.brightness = 255;
+                    printf("led 밝기 최대(%d)로 변경\n",brightness);
                 }
                 else if(brightness == 2){
                     led_data_set.brightness = 180;
+                    printf("led 밝기 중간(%d)으로 변경\n",brightness);
                 }
                 else if(brightness == 3){
                     led_data_set.brightness = 120;
+                    printf("led 밝기 최저(%d)로 변경\n",brightness);
                 }
                 else{
                     strcpy(buf,"밝기는 ... 1.LED 최대 / 2. LED 중간 / 3. LED 최저\n");
                     send(led_data_set.sd, buf, strlen(buf), 0);
                 }
             }
-
-            printf("클라이언트>> %s\n", buf);
+            // printf("클라이언트>> %s\n", buf);
         }
     }
 }
@@ -141,5 +145,6 @@ void *thread_led(void *arg)
     }
     ledControl = (OP_FUNC)dlsym(handle, "ledControl");
     ledControl(arg);
+    dlclose(handle);
     pthread_exit(NULL);
 }
