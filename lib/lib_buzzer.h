@@ -5,7 +5,7 @@
 #include <wiringPi.h>
 #include <softTone.h>
 
-#define BUZ_PIN    6   /* GPIO25 */
+#define BUZ_PIN    6
 
 void buzzer_init();
 

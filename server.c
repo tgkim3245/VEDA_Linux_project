@@ -1,0 +1,145 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <sys/select.h>
+#include <pthread.h>
+#include <dlfcn.h>
+
+#define BACKLOG 10
+#define MAXDATASIZE 1000
+char buf[MAXDATASIZE];
+int MENU = 0;
+typedef void* (* OP_FUNC) (void*);
+
+void chatting(int sd);
+void *thread_led(void *arg);
+
+struct st_led_data{
+    int sd;
+    int brightness;
+};
+
+int main(void)
+{
+    int sockfd, new_fd;
+    struct sockaddr_in server_addr;
+    struct sockaddr_in client_addr;
+    int sin_size;
+    int yes = 1;
+
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("socket");
+        exit(1);
+    }
+
+    // 소켓 옵션으로, 소켓이 죽었을때 TIME WAIT 을 거치지 않게함 
+    int optval = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(60000);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    memset(&(server_addr.sin_zero), '\0', 8);
+
+    if(bind(sockfd, (struct sockaddr *)&server_addr,
+            sizeof(struct sockaddr))==-1) {
+        perror("bind");
+        exit(1);
+    }
+    if(listen(sockfd, BACKLOG) == -1) {
+        perror("listen");
+        exit(1);
+    }
+    sin_size = sizeof(struct sockaddr_in);
+    if((new_fd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size))== -1)  {
+        perror("accept");
+    }
+    printf("입장함\n");
+    chatting(new_fd);
+    return 0;
+}
+
+void chatting(int sd){
+    struct st_led_data led_data_set;
+
+    // char buf[MAXDATASIZE];
+    int status;
+    pthread_t a_thread;
+    void *thread_result;
+
+    fd_set rfedet, rfedet_copy;
+    FD_ZERO(&rfedet);
+    FD_SET(0, &rfedet);
+    FD_SET(sd, &rfedet);
+
+    while(1){
+        rfedet_copy =  rfedet;
+        select(sd + 1, &rfedet_copy, NULL, NULL, NULL); // 이벤트가 발생!
+        if(FD_ISSET(0, &rfedet_copy)){
+            fgets(buf, sizeof(buf), stdin);
+            send(sd, buf, strlen(buf), 0);
+        }
+        else if(FD_ISSET(sd, &rfedet_copy)){
+            int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
+            buf[numbytes-1] = '\0';
+
+            if(MENU == 0){  // 메뉴선택
+                int menu = atoi(buf);
+                if(menu<1 || menu > 5){
+                    strcpy(buf,"메뉴를 잘못 입력했습니다... 1~5\n");
+                    send(sd, buf, strlen(buf), 0);
+                    continue;
+                }
+                if(menu == 1){
+                    strcpy(buf,"1.LED 최대 / 2. LED 중간 / 3. LED 최저\n");
+                    send(sd, buf, strlen(buf), 0);
+                    led_data_set.sd = sd;
+                    led_data_set.brightness = 0;
+                    pthread_create(&a_thread, NULL, thread_led, &sd);
+                }
+                MENU = menu;
+            }
+            else if(MENU == 1){
+                int brightness = atoi(buf);
+                if(brightness == 1){
+                    led_data_set.brightness = 255;
+                }
+                else if(brightness == 2){
+                    led_data_set.brightness = 180;
+                }
+                else if(brightness == 3){
+                    led_data_set.brightness = 120;
+                }
+                else{
+                    strcpy(buf,"밝기는 ... 1.LED 최대 / 2. LED 중간 / 3. LED 최저\n");
+                    send(led_data_set.sd, buf, strlen(buf), 0);
+                }
+            }
+
+            printf("클라이언트>> %s\n", buf);
+        }
+    }
+}
+
+
+void *thread_led(void *arg)
+{
+    OP_FUNC ledControl;
+    void *handle=dlopen("./lib/libledControl.so", RTLD_LAZY);
+    if(handle==NULL) {
+        printf("%s\n", dlerror());
+        exit(1);
+    }
+    ledControl = (OP_FUNC)dlsym(handle, "ledControl");
+    ledControl(arg);
+    pthread_exit(NULL);
+}
