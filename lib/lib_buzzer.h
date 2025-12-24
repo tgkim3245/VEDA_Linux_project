@@ -7,6 +7,12 @@
 
 #define BUZ_PIN    6
 
+typedef struct{
+    int sd;
+    int musicRunning;
+    int* kill_thread;
+} st_buzzer_data;
+
 void buzzer_init();
 
 void buzzer_beep();

@@ -2,14 +2,15 @@
 
 void* ledControl(void *arg){
     printf("led 라이브러리 동작함\n");
-    
+    st_led_data* data = (st_led_data*)arg;
+
     led_init();
-    while(!(((st_led_data*)arg)->kill_thread)){
-        int sd = ((st_led_data*)arg)->sd;
-        int brightness = ((st_led_data*)arg)->brightness;
+    while(!(data->kill_thread)){
+        int sd = data->sd;
+        int brightness = data->brightness;
         led_pwm('r', brightness);
         delay(100);
     }
-    ((st_led_data*)arg)->kill_thread = 0;
+    *(data->kill_thread) = 0;
     return NULL;
 }

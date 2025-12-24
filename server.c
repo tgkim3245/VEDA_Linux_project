@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <wiringPi.h>
 #include "lib_led.h"
+#include "lib_buzzer.h"
 
 #define BACKLOG 10
 #define MAXDATASIZE 1000
