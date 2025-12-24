@@ -15,6 +15,12 @@
 #define LED_GREEN_PIN 28
 #define LED_YELLOW_PIN 29
 
+typedef struct{
+    int sd;
+    int brightness;
+    int* kill_thread;
+}st_led_data;
+
 void led_init();
 
 void led_pwm(char color, int duty);

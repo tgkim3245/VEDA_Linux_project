@@ -1,19 +1,15 @@
 #include "lib_led.h"
 
-struct st_led_data{
-    int sd;
-    int brightness;
-};
-
 void* ledControl(void *arg){
     printf("led 라이브러리 동작함\n");
     
     led_init();
-    while(1){
-        int sd = ((struct st_led_data*)arg)->sd;
-        int brightness = ((struct st_led_data*)arg)->brightness;
+    while(!(((st_led_data*)arg)->kill_thread)){
+        int sd = ((st_led_data*)arg)->sd;
+        int brightness = ((st_led_data*)arg)->brightness;
         led_pwm('r', brightness);
+        delay(100);
     }
-
+    ((st_led_data*)arg)->kill_thread = 0;
     return NULL;
 }

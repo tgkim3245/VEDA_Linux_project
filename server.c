@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <dlfcn.h>
 #include <wiringPi.h>
+#include "lib_led.h"
 
 #define BACKLOG 10
 #define MAXDATASIZE 1000
@@ -24,10 +25,11 @@ typedef void* (* OP_FUNC) (void*);
 void chatting(int sd);
 void *thread_led(void *arg);
 
-struct st_led_data{
-    int sd;
-    int brightness;
-};
+// struct st_led_data{
+//     int sd;
+//     int brightness;
+//     int* kill_thread;
+// };
 
 int main(void)
 {
@@ -36,7 +38,6 @@ int main(void)
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
     int sin_size;
-    int yes = 1;
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
@@ -71,7 +72,10 @@ int main(void)
 }
 
 void chatting(int sd){
-    struct st_led_data led_data_set;
+    int kill_thread = 0;
+    int running_thread = 0;
+
+    st_led_data led_data_set;
 
     // char buf[MAXDATASIZE];
     int status;
@@ -93,6 +97,11 @@ void chatting(int sd){
         else if(FD_ISSET(sd, &rfedet_copy)){
             int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
             buf[numbytes-1] = '\0';
+            if(strcmp(buf, "home")==0){
+                if(running_thread) kill_thread = 1;
+                MENU = 0;
+                continue;
+            }
 
             if(MENU == 0){  // 메뉴선택
                 int menu = atoi(buf);
@@ -106,7 +115,10 @@ void chatting(int sd){
                     send(sd, buf, strlen(buf), 0);
                     led_data_set.sd = sd;
                     led_data_set.brightness = 0;
+                    led_data_set.kill_thread = &kill_thread;
                     pthread_create(&a_thread, NULL, thread_led, &led_data_set);
+                    pthread_detach(a_thread);
+                    running_thread = 1;
                 }
                 MENU = menu;
             }
