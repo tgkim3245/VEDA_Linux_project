@@ -27,14 +27,14 @@ int rhythm[] = {
     400, 400, 400,                 // 파트 4
     10
 };
-void buzzer_musicPlay(int* musicRunning){
+void buzzer_musicPlay(int* musicRunning, int* kill_thread){
     int total_notes = sizeof(melody) / sizeof(int);
 
     // 0번 음부터 마지막 음까지 루프
     for (int i = 0; i < total_notes; i++) {
         
         // [중요] 음을 내기 직전에 '꺼짐' 상태인지 확인
-        if (*musicRunning == 0) break;
+        if (*musicRunning == 0 || *kill_thread) break;
 
         softToneWrite(BUZ_PIN, melody[i]);
 

@@ -8,13 +8,12 @@ void* buzzerControl(void *arg){
     buzzer_init();
     while(!(*(data->kill_thread))){
         if(data->musicRunning){
-            buzzer_musicPlay(&(data->musicRunning));
+            buzzer_musicPlay(&(data->musicRunning), data->kill_thread);
         }
     }
     softToneWrite(BUZ_PIN, 0);
     delay(10);
     data->musicRunning = 0;
     *(data->kill_thread) = 0;
-    printf("lib_buzzer 라이브러리 종료\n");
     return NULL;
 }
