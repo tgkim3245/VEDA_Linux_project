@@ -4,7 +4,7 @@ LDFLAGS = -shared -Wl,--no-as-needed -lwiringPi
 
 # 각 라이브러리별 오브젝트 구성 정의
 BUZZER_OBJS = lib_buzzerControl.o lib_buzzer.o
-CDS_OBJS    = lib_cdsControl.o lib_cds.o
+CDS_OBJS    = lib_cdsControl.o lib_cds.o lib_led.o
 LED_OBJS    = lib_ledControl.o lib_led.o
 SEG_OBJS    = lib_segControl.o lib_seg.o
 

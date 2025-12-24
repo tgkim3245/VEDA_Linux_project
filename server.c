@@ -16,6 +16,7 @@
 #include <wiringPi.h>
 #include "lib_led.h"
 #include "lib_buzzer.h"
+#include "lib_cds.h"
 
 #define BACKLOG 10
 #define MAXDATASIZE 1000
@@ -26,6 +27,7 @@ typedef void* (* OP_FUNC) (void*);
 void chatting(int sd);
 void *thread_led(void *arg);
 void *thread_buzzer(void *arg);
+void *thread_cds(void *arg);
 
 int main(void)
 {
@@ -71,8 +73,9 @@ void chatting(int sd){
     int kill_thread = 0;
     int running_thread = 0;
 
-    st_led_data led_data_set;
-    st_buzzer_data buzzer_data_set;
+    st_led_data     led_data_set;
+    st_buzzer_data  buzzer_data_set;
+    st_cds_data     cds_data_set;
 
     // char buf[MAXDATASIZE];
     int status;
@@ -132,6 +135,15 @@ void chatting(int sd){
                     pthread_detach(a_thread);
                     running_thread = 1;
                 }
+                else if(menu == 3){
+                    strcpy(buf,"불빛이 감지되지 않으면 빨간색 LED가 켜집니다..\n");
+                    send(sd, buf, strlen(buf), 0);
+                    cds_data_set.sd = sd;
+                    cds_data_set.kill_thread = &kill_thread;
+                    pthread_create(&a_thread, NULL, thread_cds, &cds_data_set);
+                    pthread_detach(a_thread);
+                    running_thread = 1;
+                }
             }
             else if(MENU == 1){
                 int brightness = atoi(buf);
@@ -167,6 +179,9 @@ void chatting(int sd){
                     send(buzzer_data_set.sd, buf, strlen(buf), 0);
                 }
             }
+            else if(MENU == 3){
+
+            }
 
             // printf("클라이언트>> %s\n", buf);
         }
@@ -197,6 +212,19 @@ void *thread_buzzer(void *arg)
     }
     buzzerControl = (OP_FUNC)dlsym(handle, "buzzerControl");
     buzzerControl(arg);
+    dlclose(handle);
+    pthread_exit(NULL);
+}
+void *thread_cds(void *arg)
+{
+    OP_FUNC cdsControl;
+    void *handle=dlopen("./lib/libcdsControl.so", RTLD_LAZY);
+    if(handle==NULL) {
+        printf("%s\n", dlerror());
+        exit(1);
+    }
+    cdsControl = (OP_FUNC)dlsym(handle, "cdsControl");
+    cdsControl(arg);
     dlclose(handle);
     pthread_exit(NULL);
 }

@@ -2,6 +2,7 @@
 
 void* ledControl(void *arg){
     printf("led 라이브러리 동작함\n");
+    
     st_led_data* data = (st_led_data*)arg;
 
     led_init();
