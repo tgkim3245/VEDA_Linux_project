@@ -9,15 +9,20 @@ void* segControl(void *arg){
     seg_init();
     buzzer_init();
     while(!(*(data->kill_thread))){
-        if(data->start_num == 0) continue;
-        else if(data->start_num > 0){
-            int num = data->start_num;
-            seg_display(num);
-            *(data->start_num) = num--;
-            delay(1000);
+        if(data->start_num == 0){
+            delay(100);
+            continue;
+        }
+        while(data->start_num > 0 && !(*(data->kill_thread))){
+            seg_display(data->start_num);
+            printf("남은 시간: %d\n", data->start_num);
+            
+            delay(1000); 
+            data->start_num--;
             if(data->start_num == 0){
-                buzzer_beep();
-                break;
+                seg_display(0); 
+                printf("시간 종료 부저 \n");
+                buzzer_beep();  
             }
         }
     }

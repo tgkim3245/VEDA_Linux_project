@@ -28,7 +28,7 @@ void chatting(int sd){
         else if(FD_ISSET(sd, &rfedet_copy)){
             int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
             buf[numbytes] = '\0';
-            printf("상대방>> %s\n", buf);
+            printf("%s", buf);
         }
     }
 }

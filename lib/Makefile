@@ -6,7 +6,7 @@ LDFLAGS = -shared -Wl,--no-as-needed -lwiringPi
 BUZZER_OBJS = lib_buzzerControl.o lib_buzzer.o
 CDS_OBJS    = lib_cdsControl.o lib_cds.o lib_led.o
 LED_OBJS    = lib_ledControl.o lib_led.o
-SEG_OBJS    = lib_segControl.o lib_seg.o
+SEG_OBJS    = lib_segControl.o lib_seg.o lib_buzzer.o
 
 # 전체 오브젝트 및 의존성 파일 목록
 ALL_OBJS = $(BUZZER_OBJS) $(CDS_OBJS) $(LED_OBJS) $(SEG_OBJS)

@@ -13,7 +13,8 @@
 
 typedef struct{
     int sd;
-    int* start_num;
+    // volatile int start_num;
+    int start_num;
     int* kill_thread;
 } st_seg_data;
 
