@@ -1,16 +1,18 @@
 #include "lib_buzzer.h"
 
 void* buzzerControl(void *arg){
-    // printf("lib_buzzer 라이브러리 동작함\n");
+    printf("lib_buzzer 라이브러리 동작함\n");
     
-    // buzzer_init();
+    st_buzzer_data* data = (st_buzzer_data*)arg;
 
-    // while(!(*((st_buzzer_data*)arg)->kill_thread)){
-    //     int sd = ((st_buzzer_data*)arg)->sd;
-    //     int brightness = ((st_buzzer_data*)arg)->brightness;
-    //     led_pwm('r', brightness);
-    //     delay(100);
-    // }
-    // *(((st_buzzer_data*)arg)->kill_thread) = 0;
+    buzzer_init();
+    while(!(*(data->kill_thread))){
+        if(data->musicRunning){
+            buzzer_musicPlay(&(data->musicRunning));
+        }
+    }
+    softToneWrite(BUZ_PIN, 0);
+    data->musicRunning = 0;
+    *(data->kill_thread) = 0;
     return NULL;
 }

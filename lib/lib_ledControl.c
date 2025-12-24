@@ -5,12 +5,13 @@ void* ledControl(void *arg){
     st_led_data* data = (st_led_data*)arg;
 
     led_init();
-    while(!(data->kill_thread)){
+    while(!(*(data->kill_thread))){
         int sd = data->sd;
         int brightness = data->brightness;
         led_pwm('r', brightness);
         delay(100);
     }
+    led_pwm('r', 0);
     *(data->kill_thread) = 0;
     return NULL;
 }

@@ -19,7 +19,7 @@ typedef struct{
     int sd;
     int brightness;
     int* kill_thread;
-}st_led_data;
+} st_led_data;
 
 void led_init();
 

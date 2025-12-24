@@ -25,12 +25,7 @@ typedef void* (* OP_FUNC) (void*);
 
 void chatting(int sd);
 void *thread_led(void *arg);
-
-// struct st_led_data{
-//     int sd;
-//     int brightness;
-//     int* kill_thread;
-// };
+void *thread_buzzer(void *arg);
 
 int main(void)
 {
@@ -77,6 +72,7 @@ void chatting(int sd){
     int running_thread = 0;
 
     st_led_data led_data_set;
+    st_buzzer_data buzzer_data_set;
 
     // char buf[MAXDATASIZE];
     int status;
@@ -99,7 +95,10 @@ void chatting(int sd){
             int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
             buf[numbytes-1] = '\0';
             if(strcmp(buf, "home")==0){
-                if(running_thread) kill_thread = 1;
+                if(running_thread) {
+                    kill_thread = 1;
+                    running_thread = 0;
+                }
                 MENU = 0;
                 continue;
             }
@@ -111,6 +110,8 @@ void chatting(int sd){
                     send(sd, buf, strlen(buf), 0);
                     continue;
                 }
+                MENU = menu;
+
                 if(menu == 1){
                     strcpy(buf,"1.LED 최대 / 2. LED 중간 / 3. LED 최저\n");
                     send(sd, buf, strlen(buf), 0);
@@ -121,7 +122,16 @@ void chatting(int sd){
                     pthread_detach(a_thread);
                     running_thread = 1;
                 }
-                MENU = menu;
+                else if(menu == 2){
+                    strcpy(buf,"노래 on off ... 1.on / 2. off...\n");
+                    send(sd, buf, strlen(buf), 0);
+                    buzzer_data_set.sd = sd;
+                    buzzer_data_set.musicRunning = 0;
+                    buzzer_data_set.kill_thread = &kill_thread;
+                    pthread_create(&a_thread, NULL, thread_buzzer, &buzzer_data_set);
+                    pthread_detach(a_thread);
+                    running_thread = 1;
+                }
             }
             else if(MENU == 1){
                 int brightness = atoi(buf);
@@ -142,6 +152,22 @@ void chatting(int sd){
                     send(led_data_set.sd, buf, strlen(buf), 0);
                 }
             }
+            else if(MENU == 2){
+                int music_onoff = atoi(buf);
+                if(music_onoff == 1){
+                    buzzer_data_set.musicRunning = 1;
+                    printf("노래 on\n");
+                }
+                else if(music_onoff == 2){
+                    buzzer_data_set.musicRunning = 0;
+                    printf("노래 off\n");
+                }
+                else{
+                    strcpy(buf,"노래 on off는 ... 1.on / 2. off...\n");
+                    send(buzzer_data_set.sd, buf, strlen(buf), 0);
+                }
+            }
+
             // printf("클라이언트>> %s\n", buf);
         }
     }
@@ -158,6 +184,19 @@ void *thread_led(void *arg)
     }
     ledControl = (OP_FUNC)dlsym(handle, "ledControl");
     ledControl(arg);
+    dlclose(handle);
+    pthread_exit(NULL);
+}
+void *thread_buzzer(void *arg)
+{
+    OP_FUNC buzzerControl;
+    void *handle=dlopen("./lib/libbuzzerControl.so", RTLD_LAZY);
+    if(handle==NULL) {
+        printf("%s\n", dlerror());
+        exit(1);
+    }
+    buzzerControl = (OP_FUNC)dlsym(handle, "buzzerControl");
+    buzzerControl(arg);
     dlclose(handle);
     pthread_exit(NULL);
 }
