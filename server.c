@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/select.h>
 #include <pthread.h>
@@ -30,9 +31,12 @@ void *thread_led(void *arg);
 void *thread_buzzer(void *arg);
 void *thread_cds(void *arg);
 void *thread_seg(void *arg);
+void daemonize();
 
 int main(void)
 {
+    signal(SIGPIPE, SIG_IGN);
+    daemonize(); // 데몬 프로세스 생성
     wiringPiSetup(); 
     int sockfd, new_fd;
     struct sockaddr_in server_addr;
@@ -89,7 +93,7 @@ void chatting(int sd){
 
     fd_set rfedet, rfedet_copy;
     FD_ZERO(&rfedet);
-    FD_SET(0, &rfedet);
+    // FD_SET(0, &rfedet); // 대몬화로 삭제
     FD_SET(sd, &rfedet);
 
     char* menu_list = 
@@ -104,12 +108,17 @@ void chatting(int sd){
     while(1){
         rfedet_copy =  rfedet;
         select(sd + 1, &rfedet_copy, NULL, NULL, NULL); // 이벤트가 발생!
-        if(FD_ISSET(0, &rfedet_copy)){
+        /*if(FD_ISSET(0, &rfedet_copy)){
             fgets(buf, sizeof(buf), stdin);
             send(sd, buf, strlen(buf), 0);
         }
-        else if(FD_ISSET(sd, &rfedet_copy)){
+        else */if(FD_ISSET(sd, &rfedet_copy)){
             int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
+            if(numbytes <= 0) { 
+                printf("클라이언트 접속 종료\n");
+                close(sd); // 소켓 자원 반환
+                return;    // chatting 함수 종료 후 main의 accept로 복귀
+            }
             buf[numbytes-1] = '\0';
 
             if(strcmp(buf, "home")==0){
@@ -242,7 +251,7 @@ void chatting(int sd){
 void *thread_led(void *arg)
 {
     OP_FUNC ledControl;
-    void *handle=dlopen("./lib/libledControl.so", RTLD_LAZY);
+    void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libledControl.so", RTLD_LAZY);
     if(handle==NULL) {
         printf("%s\n", dlerror());
         exit(1);
@@ -255,7 +264,7 @@ void *thread_led(void *arg)
 void *thread_buzzer(void *arg)
 {
     OP_FUNC buzzerControl;
-    void *handle=dlopen("./lib/libbuzzerControl.so", RTLD_LAZY);
+    void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libbuzzerControl.so", RTLD_LAZY);
     if(handle==NULL) {
         printf("%s\n", dlerror());
         exit(1);
@@ -268,7 +277,7 @@ void *thread_buzzer(void *arg)
 void *thread_cds(void *arg)
 {
     OP_FUNC cdsControl;
-    void *handle=dlopen("./lib/libcdsControl.so", RTLD_LAZY);
+    void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libcdsControl.so", RTLD_LAZY);
     if(handle==NULL) {
         printf("%s\n", dlerror());
         exit(1);
@@ -281,7 +290,7 @@ void *thread_cds(void *arg)
 void *thread_seg(void *arg)
 {
     OP_FUNC segControl;
-    void *handle=dlopen("./lib/libsegControl.so", RTLD_LAZY);
+    void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libsegControl.so", RTLD_LAZY);
     if(handle==NULL) {
         printf("%s\n", dlerror());
         exit(1);
@@ -290,4 +299,37 @@ void *thread_seg(void *arg)
     segControl(arg);
     dlclose(handle);
     pthread_exit(NULL);
+}
+
+void daemonize() {
+pid_t pid;
+
+    // 1차 포크: 부모 종료
+    pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    // 세션 리더가 되어 터미널과 결별
+    if (setsid() < 0) exit(EXIT_FAILURE);
+
+    // 2차 포크: 다시는 터미널을 가질 수 없게 함
+    pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    // 작업 디렉토리 및 umask 설정
+    chdir("/");
+    umask(0);
+
+    // [핵심 수정] 모든 FD를 닫는 대신 0, 1, 2만 재지정합니다.
+    // /dev/null을 읽고 쓰기 모드로 엽니다.
+    int fd = open("/dev/null", O_RDWR);
+    if (fd != -1) {
+        // dup2(A, B)는 B를 닫고 A를 B로 복사합니다.
+        dup2(fd, STDIN_FILENO);  // 0번(입력)을 /dev/null로
+        dup2(fd, STDOUT_FILENO); // 1번(출력)을 /dev/null로
+        dup2(fd, STDERR_FILENO); // 2번(에러)을 /dev/null로
+        
+        if (fd > 2) close(fd); // 0, 1, 2가 아니면 열었던 fd는 닫음
+    }
 }

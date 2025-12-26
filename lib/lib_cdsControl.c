@@ -11,7 +11,7 @@ void* cdsControl(void* arg){
     while(!(*(data->kill_thread))){
         int sd = data->sd;
         // int brightness = data->brightness;
-        if(cds_read()>200){
+        if(cds_read()>180){
             led_pwm('r', 255);
         }
         else{
