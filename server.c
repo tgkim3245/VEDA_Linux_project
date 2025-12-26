@@ -62,12 +62,14 @@ int main(void)
         perror("listen");
         exit(1);
     }
-    sin_size = sizeof(struct sockaddr_in);
-    if((new_fd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size))== -1)  {
-        perror("accept");
+    while(1){
+        sin_size = sizeof(struct sockaddr_in);
+        if((new_fd = accept(sockfd, (struct sockaddr *) &client_addr, &sin_size))== -1)  {
+            perror("accept");
+        }
+        printf("입장함\n");
+        chatting(new_fd);
     }
-    printf("입장함\n");
-    chatting(new_fd);
     return 0;
 }
 
@@ -96,7 +98,6 @@ void chatting(int sd){
         "2. 부저 노래 재생\n"
         "3. CDS 조도 센서 모니터링\n"
         "4. 세븐세그먼트 카운트다운\n"
-        "5. 프로그램 종료\n"
         "********************************\n";
     send(sd, menu_list, strlen(menu_list), 0);
 
@@ -187,18 +188,18 @@ void chatting(int sd){
                 int brightness = atoi(buf);
                 if(brightness == 1){
                     led_data_set.brightness = 255;
-                    printf("led 밝기 최대(%d)로 변경\n",brightness);
+                    printf("led 밝기 최대로 변경\n");
                 }
                 else if(brightness == 2){
                     led_data_set.brightness = 180;
-                    printf("led 밝기 중간(%d)으로 변경\n",brightness);
+                    printf("led 밝기 중간으로 변경\n");
                 }
                 else if(brightness == 3){
                     led_data_set.brightness = 120;
-                    printf("led 밝기 최저(%d)로 변경\n",brightness);
+                    printf("led 밝기 최저로 변경\n");
                 }
                 else{
-                    strcpy(buf,"밝기는 ... 1.LED 최대 / 2. LED 중간 / 3. LED 최저\n");
+                    strcpy(buf,"잘못 입력하였습니다...(1.밝게  2.중간   3.어둡게)\n");
                     send(led_data_set.sd, buf, strlen(buf), 0);
                 }
             }
