@@ -7,12 +7,13 @@ BUZZER_OBJS = lib_buzzerControl.o lib_buzzer.o
 CDS_OBJS    = lib_cdsControl.o lib_cds.o lib_led.o
 LED_OBJS    = lib_ledControl.o lib_led.o
 SEG_OBJS    = lib_segControl.o lib_seg.o lib_buzzer.o
+MOTOR_OBJS  = lib_motorControl.o lib_cds.o lib_motor.o
 
 # 전체 오브젝트 및 의존성 파일 목록
-ALL_OBJS = $(BUZZER_OBJS) $(CDS_OBJS) $(LED_OBJS) $(SEG_OBJS)
+ALL_OBJS = $(BUZZER_OBJS) $(CDS_OBJS) $(LED_OBJS) $(SEG_OBJS) $(MOTOR_OBJS)
 DEPS = $(ALL_OBJS:.o=.d)
 
-TARGETS = libbuzzerControl.so libcdsControl.so libledControl.so libsegControl.so
+TARGETS = libbuzzerControl.so libcdsControl.so libledControl.so libsegControl.so libmotorControl.so
 
 all: $(TARGETS)
 
@@ -26,6 +27,9 @@ libledControl.so : $(LED_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 libsegControl.so : $(SEG_OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+libmotorControl.so : $(MOTOR_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # 패턴 규칙: .c를 .o로 컴파일

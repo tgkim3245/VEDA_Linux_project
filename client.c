@@ -41,7 +41,7 @@ struct sockaddr_in server_addr;
 void signal_handler(int signum) {
     if (signum == SIGINT) {
         close(sockfd);
-        printf("\nSIGINT 감지. 프로그램 종료.\n");
+        printf("\n프로그램 종료.\n");
         exit(0); 
     }
 }

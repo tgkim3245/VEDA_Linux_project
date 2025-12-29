@@ -11,7 +11,7 @@
 |   0 |              | GPIO. 0 |   IN | 11 || 12 | IN   | GPIO. 1 |               | 1   |
 |   2 |              | GPIO. 2 |   IN | 13 || 14 |      | 0v      | decoder_GND   |     |
 |   3 |              | GPIO. 3 |   IN | 15 || 16 | IN   | GPIO. 4 |               | 4   |
-|     |I2C VCC       |    3.3v |      | 17 || 18 | IN   | GPIO. 5 |               | 5   |
+|     |I2C VCC       |    3.3v |      | 17 || 18 | IN   | GPIO. 5 | button(NL)    | 5   |
 |  12 |              |    MOSI |   IN | 19 || 20 |      | 0v      |               |     | 
 |  13 |              |    MISO |   IN | 21 || 22 | IN   | GPIO. 6 |  buzzer       | 6   | 
 |  14 |              |    SCLK |   IN | 23 || 24 | IN   | CE0     |               | 10  |

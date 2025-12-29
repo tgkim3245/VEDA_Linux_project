@@ -19,6 +19,7 @@
 #include "lib_buzzer.h"
 #include "lib_cds.h"
 #include "lib_seg.h"
+#include "lib_motor.h"
 
 #define BACKLOG 10
 #define MAXDATASIZE 1000
@@ -31,6 +32,7 @@ void *thread_led(void *arg);
 void *thread_buzzer(void *arg);
 void *thread_cds(void *arg);
 void *thread_seg(void *arg);
+void *thread_motor(void *arg);
 void daemonize();
 
 int main(void)
@@ -85,6 +87,7 @@ void chatting(int sd){
     st_buzzer_data  buzzer_data_set;
     st_cds_data     cds_data_set;
     st_seg_data     seg_data_set;
+    st_motor_data   motor_data_set;
 
     // char buf[MAXDATASIZE];
     int status;
@@ -102,6 +105,7 @@ void chatting(int sd){
         "2. 부저 노래 재생\n"
         "3. CDS 조도 센서 모니터링\n"
         "4. 세븐세그먼트 카운트다운\n"
+        "5. [추가기능] CDS 모터제어\n"
         "********************************\n";
     send(sd, menu_list, strlen(menu_list), 0);
 
@@ -116,8 +120,8 @@ void chatting(int sd){
             int numbytes = recv(sd, buf, MAXDATASIZE - 1, 0);
             if(numbytes <= 0) { 
                 printf("클라이언트 접속 종료\n");
-                close(sd); // 소켓 자원 반환
-                return;    // chatting 함수 종료 후 main의 accept로 복귀
+                close(sd);
+                return;
             }
             buf[numbytes-1] = '\0';
 
@@ -131,9 +135,9 @@ void chatting(int sd){
                 continue;
             }
 
-            if(MENU == 0){  // 홈
+            if(MENU == 0){
                 int menu = atoi(buf);
-                if(menu<1 || menu > 5){
+                if(menu < 1 || menu > 5){
                     strcpy(buf,"메뉴를 잘못 입력했습니다... 1~5\n");
                     send(sd, buf, strlen(buf), 0);
                     send(sd, menu_list, strlen(menu_list), 0);
@@ -180,7 +184,6 @@ void chatting(int sd){
                     running_thread = 1;
                 }
                 else if(menu == 4){
-                    strcpy(buf,"숫자를 입력하면 카운트 다운 됩니다..\n");
                     strcpy(buf, "\n기능4. 세븐세그먼트 카운트다운\n\n"
                                 " 숫자를 입력하면 카운트 다운 됩니다..\n\n"
                                 " (home) 홈으로 \n\n");
@@ -192,7 +195,20 @@ void chatting(int sd){
                     pthread_detach(a_thread);
                     running_thread = 1;
                 }
+                else if(menu == 5){
+                    strcpy(buf, "\n기능5. [추가기능] CDS 모터제어\n\n"
+                                " 빛의 밝기에 따라 모터 속도게 제어됩니다..\n\n"
+                                " (home) 홈으로 \n\n");
+                    send(sd, buf, strlen(buf), 0);
+                    motor_data_set.sd = sd;
+                    motor_data_set.motorRunning = 0;
+                    motor_data_set.kill_thread = &kill_thread;
+                    pthread_create(&a_thread, NULL, thread_motor, &motor_data_set);
+                    pthread_detach(a_thread);
+                    running_thread = 1;
+                }
             }
+
             else if(MENU == 1){
                 int brightness = atoi(buf);
                 if(brightness == 1){
@@ -241,15 +257,15 @@ void chatting(int sd){
                     send(seg_data_set.sd, buf, strlen(buf), 0);
                 }
             }
+            else if(MENU == 5){
 
-            // printf("클라이언트>> %s\n", buf);
+            }
         }
     }
 }
 
 
-void *thread_led(void *arg)
-{
+void *thread_led(void *arg){
     OP_FUNC ledControl;
     void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libledControl.so", RTLD_LAZY);
     if(handle==NULL) {
@@ -261,8 +277,7 @@ void *thread_led(void *arg)
     dlclose(handle);
     pthread_exit(NULL);
 }
-void *thread_buzzer(void *arg)
-{
+void *thread_buzzer(void *arg){
     OP_FUNC buzzerControl;
     void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libbuzzerControl.so", RTLD_LAZY);
     if(handle==NULL) {
@@ -274,8 +289,7 @@ void *thread_buzzer(void *arg)
     dlclose(handle);
     pthread_exit(NULL);
 }
-void *thread_cds(void *arg)
-{
+void *thread_cds(void *arg){
     OP_FUNC cdsControl;
     void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libcdsControl.so", RTLD_LAZY);
     if(handle==NULL) {
@@ -287,8 +301,7 @@ void *thread_cds(void *arg)
     dlclose(handle);
     pthread_exit(NULL);
 }
-void *thread_seg(void *arg)
-{
+void *thread_seg(void *arg){
     OP_FUNC segControl;
     void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libsegControl.so", RTLD_LAZY);
     if(handle==NULL) {
@@ -300,9 +313,21 @@ void *thread_seg(void *arg)
     dlclose(handle);
     pthread_exit(NULL);
 }
+void *thread_motor(void *arg){
+    OP_FUNC motorControl;
+    void *handle=dlopen("/home/suseok/VEDA_Linux_project/lib/libmotorControl.so", RTLD_LAZY);
+    if(handle==NULL) {
+        printf("%s\n", dlerror());
+        exit(1);
+    }
+    motorControl = (OP_FUNC)dlsym(handle, "motorControl");
+    motorControl(arg);
+    dlclose(handle);
+    pthread_exit(NULL);
+}
 
 void daemonize() {
-pid_t pid;
+    pid_t pid;
 
     // 1차 포크: 부모 종료
     pid = fork();

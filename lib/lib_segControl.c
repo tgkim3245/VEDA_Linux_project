@@ -11,7 +11,7 @@ void* segControl(void *arg){
     while(!(*(data->kill_thread))){
         if(data->start_num == 0){
             delay(100);
-            continue;
+            continue;  
         }
         while(data->start_num > 0 && !(*(data->kill_thread))){
             seg_display(data->start_num);
