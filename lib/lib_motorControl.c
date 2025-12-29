@@ -12,7 +12,7 @@ void* motorControl(void* arg){
     motor_speed(0);
     seg_init();
     while(!(*(data->kill_thread))){
-        
+
         int cds_val = cds_read(); // 240(어두울때) ~ 140(밝을때)
         if(cds_val>240) cds_val  = 240;
         else if(cds_val<140) cds_val = 140;
